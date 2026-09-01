@@ -1,0 +1,349 @@
+// ── Full-bleed map shell ─────────────────────────────────────────────
+// :host is the Angular component root — we make it block + full height so
+// Ionic's content can measure 100dvh correctly (otherwise height collapses).
+:host {
+  display: block;
+  height: 100%;
+  font-family: var(--font-display); // system Inter stack from global.scss
+}
+
+/**
+ * Map content — overrides Ionic's default scrollable content.
+ * - --background / --padding-* zero out Ionic's padded, scrollable defaults.
+ * - 100dvh is the dynamic viewport (accounts for mobile browser chrome);
+ *   100svh is the small viewport fallback for iOS Safari.
+ * - overflow:hidden prevents bounce/scroll from interfering with Leaflet drag.
+ */
+.map-content {
+  --background: var(--ion-background-color, #eef1f3);
+  --padding-start: 0; --padding-end: 0; --padding-top: 0; --padding-bottom: 0;
+  --overflow: hidden;
+  position: relative; // anchor for absolute children (map + floating layers)
+  height: 100dvh;
+  height: 100svh;
+  width: 100vw;
+  overflow: hidden;
+  // dark tiles already dark; keep background dark in both, but adapt ionic content
+  background: var(--ion-background-color);
+}
+
+/**
+ * Map — absolute full-bleed, behind all floating layers (z:0).
+ * - inset:0 is shorthand for top/right/bottom/left:0 — fills the relative parent.
+ * - Background gradient is visible before tiles load (perceived perf: no white flash).
+ */
+#map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  background:
+    radial-gradient(1200px 600px at 70% 10%, rgba(0,48,73,0.06), transparent 60%),
+    linear-gradient(180deg, #eef1f3 0%, #e6e2d6 100%);
+}
+
+// map is now always visible (preview before Start); no .map-hidden toggle
+
+// Floating brand — BARG (reverse of GRAB), top-left, bold, above map
+.floating-brand {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  left: 16px;
+  z-index: 11;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.6);
+  pointer-events: none;
+  user-select: none;
+}
+
+/**
+ * Glass token — adapts to system theme via prefers-color-scheme.
+ * Light: 84% white. Dark: 78% charcoal (so it lifts over dark map, not blind white).
+ */
+.glass {
+  background: rgba(255,255,255,0.84);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15); // Safari 14+ needs prefix
+  border: 1px solid rgba(255,255,255,0.62);
+  box-shadow: var(--shadow-soft); // token from global.scss
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass {
+    background: rgba(28, 28, 30, 0.78);
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset;
+  }
+}
+
+  // Solid fallback — older Android WebView has no backdrop-filter
+@supports not (backdrop-filter: blur(1px)) {
+  .glass { background: rgba(255,255,255,0.96); }
+  @media (prefers-color-scheme: dark) {
+    .glass { background: rgba(28,28,30,0.92); }
+  }
+}
+
+/**
+ * Prompt overlay — editorial empty state (signature element, per frontend-design).
+ * - Grid place-items:center centers the card both axes.
+ * - Padding-bottom reserves space for the bottom pill so the card doesn't sit
+ *   flush against controls (visual breathing room).
+ * - Background dot-grid + gradient gives texture so "empty map" doesn't look broken.
+ * - pointer-events:none on overlay lets map receive gestures in gaps; card re-enables.
+ */
+.prompt-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5; // above map (0), below floating-bottom (10) — controls stay tappable
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); // clears bottom pill
+  // transparent so preview map stays visible behind the prompt card
+  background: transparent;
+  pointer-events: none;
+}
+
+.prompt-card {
+  pointer-events: auto; // re-enable taps inside the card
+  border-radius: var(--radius-xl); // 20px token
+  padding: 28px 24px 24px;
+  max-width: 360px;
+  width: 100%;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+
+  // Subtle top hairline — 1px gradient, inset 18px each side (not full-bleed)
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 18px; right: 18px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,48,73,0.12), transparent);
+  }
+
+  .eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6b7a8a;
+    margin: 0 0 10px;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.32rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em; // tight display tracking
+    color: #0f2430;
+    text-wrap: balance; // avoid orphan
+  }
+
+  p {
+    margin: 10px 0 18px;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: #4a5a6a;
+    text-wrap: pretty;
+  }
+
+  .prompt-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #0f2430;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+
+    ion-icon { font-size: 20px; opacity: 0.9; }
+  }
+}
+
+/**
+ * Floating bottom sheet — one column, bottom-center.
+ * - Absolute + safe-area inset keeps it above iPhone home indicator / nav bar.
+ * - Max-width 420px centered via transform on ≥480px; full-bleed with 12px gutters on mobile.
+ * - pointer-events:none on container lets map pan through the gap between cards;
+ *   each child re-enables pointer-events.
+ * - Controls are LAST child — satisfies "buttons as most bottom element".
+ */
+.floating-bottom {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); // 14px + notch/home indicator
+  left: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; // 8px grid: 10px sits between 8 and 16
+  align-items: stretch;
+  pointer-events: none;
+
+  @media (min-width: 480px) {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(420px, calc(100vw - 24px));
+  }
+
+  > * { pointer-events: auto; width: 100%; }
+
+  // Info card entrance — 220ms ease-out, scale 0.97→1 + opacity (emil: never scale(0))
+  app-position-card {
+    display: block;
+    animation: cardIn 220ms var(--ease-out); // --ease-out is cubic-bezier(0.23,1,0.32,1)
+    @starting-style { opacity: 0; transform: translateY(8px) scale(0.97); }
+  }
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+// Loading chip — pill below info card, pulsing dot indicates "locating…"
+.loading-chip {
+  align-self: center;
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  &::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 999px;
+    background: var(--ion-color-orange, #f77f00);
+    box-shadow: 0 0 0 4px rgba(247,127,0,0.14); // soft halo
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.85); opacity: 0.7; }
+}
+
+/**
+ * Controls pill — three equal buttons in a pill container.
+ * - Grid 1fr 1fr 1fr gives equal width without flex grow quirks.
+ * - 8px gap + 8px padding sit on the 8px spacing scale (baseline-ui).
+ * - Active scale 0.97 provides tactile feedback (emil: buttons must feel responsive).
+ * - Transition only transform + filter (compositor props, no layout thrash).
+ * - Hover lift only on fine pointers (hover:hover) — avoids sticky hover on mobile.
+ */
+.controls-pill {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  border-radius: var(--radius-pill);
+  padding: 8px;
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+
+  ion-button {
+    margin: 0;
+    --border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 0.92rem;
+    letter-spacing: 0.01em;
+    min-height: 44px; // 44×44 touch target (a11y)
+    --box-shadow: none; // remove Ionic default shadow, glass provides lift
+    transition: transform 160ms var(--ease-out), filter 160ms var(--ease-out);
+    text-transform: none; // keep sentence case (Start/Track/Stop)
+
+    &:active { transform: scale(0.97); }
+  }
+
+  // Fine-pointer hover — subtle lift, not on touch devices
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { box-shadow: var(--shadow-lift); }
+  }
+
+  @media (max-width: 340px) { gap: 6px; padding: 6px; }
+}
+
+/**
+ * Leaflet chrome — positioned via both JS and CSS.
+ * - JS (home.page.ts: L.control.zoom({position:'topright'})) moves the container
+ *   between corners (Leaflet's .leaflet-top/.leaflet-bottom + .leaflet-left/.leaflet-right).
+ * - CSS here fine-tunes margins so controls clear safe-area + bottom pill and
+ *   adopt the glass aesthetic (rounded 14px, soft shadow).
+ */
+:host ::ng-deep .leaflet-control-zoom {
+  margin-top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+  margin-left: 12px !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft) !important;
+  border: 1px solid rgba(255,255,255,0.62) !important;
+  a {
+    width: 40px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 16px !important;
+    color: #0f2430 !important;
+  }
+}
+
+:host ::ng-deep .leaflet-control-attribution {
+  margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 74px) !important; // clears pill (~58px + gap)
+  margin-right: 8px !important;
+  background: rgba(255,255,255,0.78) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 10px;
+  padding: 3px 8px !important;
+  font-size: 10px !important;
+  border: 1px solid rgba(255,255,255,0.6);
+}
+
+// System dark: flip remaining navy inks to light so they stay legible on dark glass/dark map
+@media (prefers-color-scheme: dark) {
+  .prompt-card h2 { color: #f1f5f9; }
+  .prompt-card p { color: #cbd5e1; }
+  .prompt-card .eyebrow { color: #94a3b8; }
+  .prompt-actions { color: #f1f5f9; }
+  // Leaflet chrome — dark glass
+  :host ::ng-deep .leaflet-control-zoom {
+    border-color: rgba(255,255,255,0.12) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.45) !important;
+    a { color: #f1f5f9 !important; background: rgba(28,28,30,0.85) !important; }
+  }
+  :host ::ng-deep .leaflet-control-attribution {
+    background: rgba(28,28,30,0.78) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    color: #cbd5e1 !important;
+    a { color: #94a3b8 !important; }
+  }
+}
+
+:host ::ng-deep .distance-tooltip {
+  background: rgba(15,36,48,0.92) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: var(--radius-pill) !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-variant-numeric: tabular-nums; // prevents jitter as distance updates
+  box-shadow: 0 4px 12px rgba(0,0,0,0.22) !important;
+}
+
+// Respect reduced motion — no entrance or pulse
+@media (prefers-reduced-motion: reduce) {
+  .floating-bottom app-position-card,
+  .loading-chip::before { animation: none !important; }
+  .controls-pill ion-button { transition: none !important; }
+}
