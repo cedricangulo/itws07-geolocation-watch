@@ -1,0 +1,74 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Put style rules here that you want to apply globally. These styles are for
+ * the entire app and not just one component. Additionally, this file can be
+ * used as an entry point to import other CSS/Sass files to be included in the
+ * output CSS.
+ * For more information on global stylesheets, visit the documentation:
+ * https://ionicframework.com/docs/layout/global-stylesheets
+ */
+
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+
+/* Optional CSS utils that can be commented out */
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+/**
+ * Ionic Dark Mode
+ * -----------------------------------------------------
+ * For more info, please see:
+ * https://ionicframework.com/docs/theming/dark-mode
+ */
+
+// @import "@ionic/angular/css/palettes/dark.always.css";
+/* @import "@ionic/angular/css/palettes/dark.class.css"; */
+@import '@ionic/angular/css/palettes/dark.system.css';
+
+/**
+ * Leaflet — required for map tiles/markers.
+ * Must be imported globally because Leaflet injects its own DOM inside #map
+ * that lives outside Angular's view encapsulation. Without this, zoom controls
+ * and attribution lose their layout.
+ */
+@import 'leaflet/dist/leaflet.css';
+
+/**
+ * Design tokens — single source for motion, radius, shadow, and type.
+ * - --ease-out: strong ease-out (emil) — feels instant, not sluggish like ease-in.
+ * - --ease-drawer: iOS drawer curve for bottom sheets.
+ * - --radius-xl: card radius (20px) — matches position-card + prompt.
+ * - --radius-pill: fully rounded for controls/zoom/attribution.
+ * - --shadow-soft / --shadow-lift: soft glass lift, not heavy drop shadows.
+ * - --font-display: system Inter stack — no external font load, keeps bundle small.
+ */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.16), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  --shadow-lift: 0 12px 40px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+  --font-display: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+// Type — system font, balance/pretty avoids orphans without manual hyphens
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; letter-spacing: -0.02em; }
+p, ion-label, ion-title { text-wrap: pretty; line-height: 1.5; }
+
+// Focus visible — never remove; uses Grab green (blue token now #00B14F)
+:focus-visible { outline: 2px solid var(--ion-color-blue, #00B14F); outline-offset: 2px; }
+
+// Selection — subtle brand tint instead of default blue
+::selection { background: rgba(0, 48, 73, 0.14); }

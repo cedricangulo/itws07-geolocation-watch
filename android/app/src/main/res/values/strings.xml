@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Geolocation Watch</string>
+    <string name="title_activity_main">Geolocation Watch</string>
+    <string name="package_name">io.ionic.geowatch</string>
+    <string name="custom_url_scheme">io.ionic.geowatch</string>
+</resources>
