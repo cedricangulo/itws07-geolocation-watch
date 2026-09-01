@@ -1,0 +1,39 @@
+// Host fills available width when used as a standalone banner
+:host {
+  display: block;
+  width: 100%;
+}
+
+/**
+ * Glass pill — mirrors the controls-pill token so any re-use stays consistent.
+ * - 82% white + 14px blur lets map texture show through subtly.
+ * - 999px radius + 44px min-height makes it feel like a pill, not a toolbar.
+ */
+ion-toolbar {
+  --background: rgba(255, 255, 255, 0.82);
+  --border-width: 0;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 1.5px 0 rgba(255, 255, 255, 0.6) inset;
+  border-radius: 999px; // pill — matches controls-pill
+  --min-height: 44px;
+  padding: 4px 0;
+}
+
+// Solid fallback for no backdrop-filter support
+@supports not (backdrop-filter: blur(1px)) {
+  ion-toolbar {
+    --background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.96);
+  }
+}
+
+ion-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ion-color-blue, #003049);
+  padding-inline: 16px;
+}
