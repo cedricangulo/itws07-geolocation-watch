@@ -20,6 +20,7 @@ export class HomePage implements OnDestroy, AfterViewInit {
   // map state
   map!: L.Map;
   latlng: { lat: number; lng: number } = { lat: 0, lng: 0 };
+  startMarker?: L.CircleMarker;
   lastMarker?: L.CircleMarker;
   distanceLine?: L.Polyline<any>;
   watcherId: string | null = null;
@@ -51,8 +52,8 @@ export class HomePage implements OnDestroy, AfterViewInit {
       this.latlng = coordinates;
       // defer so #map has size (WP uses setTimeout 0)
       setTimeout(() => this.mapInit(), 0);
-      await this.hideLoading();
       this.isDisabled = false;
+      await this.hideLoading();
     } catch (error) {
       console.log('errorizing: ', error);
       await this.hideLoading();
@@ -64,8 +65,8 @@ export class HomePage implements OnDestroy, AfterViewInit {
   private initPreviewMap() {
     if (this.map) return;
     this.map = L.map('map', {
-      center: [14.5995, 120.9842], // Manila — visible land while waiting for GPS
-      zoom: 12,
+      center: [15.4865, 120.9675], // Cabanatuan City
+      zoom: 13,
       zoomControl: false,
     });
     L.control.zoom({ position: 'topright' }).addTo(this.map);
@@ -75,7 +76,6 @@ export class HomePage implements OnDestroy, AfterViewInit {
     // ensure Leaflet measures the 100dvh container after Ionic finishes layout
     requestAnimationFrame(() => this.map.invalidateSize());
     setTimeout(() => this.map.invalidateSize(), 200);
-    setTimeout(() => this.map.invalidateSize(), 600);
   }
 
   ngAfterViewInit() {
@@ -97,21 +97,29 @@ export class HomePage implements OnDestroy, AfterViewInit {
     // preview map already exists — recenter to real fix and add start marker
     if (this.map) {
       this.map.setView([this.latlng.lat, this.latlng.lng], 19);
-      L.circleMarker([this.latlng.lat, this.latlng.lng], {
+      if (this.startMarker) this.map.removeLayer(this.startMarker);
+      this.startMarker = L.circleMarker([this.latlng.lat, this.latlng.lng], {
         radius: 5,
         color: '#00B14F',
-      }).addTo(this.map);
+      })
+        .addTo(this.map)
+        .bindTooltip('A · Start', {
+          permanent: true,
+          direction: 'top',
+          offset: [0, -10],
+          className: 'start-tooltip',
+        })
+        .openTooltip();
+
       setTimeout(() => {
         this.map.invalidateSize();
       }, 200);
+
       fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${this.latlng.lat}&lon=${this.latlng.lng}&format=json`
       )
         .then((res) => res.json())
         .then((data) => {
-          L.tooltip([this.latlng.lat, this.latlng.lng], {
-            content: data.address?.village ?? data.address?.city ?? data.display_name,
-          }).addTo(this.map);
           this.display_name.set(data.display_name);
         })
         .catch(() => {
@@ -129,10 +137,19 @@ export class HomePage implements OnDestroy, AfterViewInit {
     L.control.zoom({ position: 'topright' }).addTo(this.map);
 
     L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner_dark/{z}/{x}/{y}{r}.png').addTo(this.map);
-    L.circleMarker([this.latlng.lat, this.latlng.lng], {
+    if (this.startMarker) this.map.removeLayer(this.startMarker);
+    this.startMarker = L.circleMarker([this.latlng.lat, this.latlng.lng], {
       radius: 5,
       color: '#00B14F',
-    }).addTo(this.map);
+    })
+      .addTo(this.map)
+      .bindTooltip('A · Start', {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -10],
+        className: 'start-tooltip',
+      })
+      .openTooltip();
 
     // CP fix: single invalidate after Ionic layout settles
     setTimeout(() => {
@@ -144,9 +161,6 @@ export class HomePage implements OnDestroy, AfterViewInit {
     )
       .then((res) => res.json())
       .then((data) => {
-        L.tooltip([this.latlng.lat, this.latlng.lng], {
-          content: data.address?.village ?? data.address?.city ?? data.display_name,
-        }).addTo(this.map);
         this.display_name.set(data.display_name);
       })
       .catch(() => {
@@ -154,7 +168,7 @@ export class HomePage implements OnDestroy, AfterViewInit {
       });
   }
 
-  // watchPosition effect — creates blue marker + green polyline + distance
+  // watchPosition effect — creates branded tooltips A/B + green polyline + distance
   constructor() {
     effect(() => {
       const pos = this.GeolocationService.movingPosition();
@@ -165,7 +179,15 @@ export class HomePage implements OnDestroy, AfterViewInit {
           this.lastMarker = L.circleMarker([pos.lat, pos.lng], {
             radius: 5,
             color: 'blue',
-          }).addTo(this.map);
+          })
+            .addTo(this.map)
+            .bindTooltip('B · Now', {
+              permanent: true,
+              direction: 'top',
+              offset: [0, -10],
+              className: 'moving-tooltip',
+            })
+            .openTooltip();
         } else {
           this.lastMarker.setLatLng([pos.lat, pos.lng]);
         }
@@ -208,10 +230,12 @@ export class HomePage implements OnDestroy, AfterViewInit {
     }
   }
 
-  showMap() {
-    this.showLoading();
-    void this.getCurrentLocation();
+  async showMap() {
+    // guard double-tap while locating
+    if (this.loader) return;
     this.isMapVisible = true;
+    await this.showLoading();
+    await this.getCurrentLocation();
   }
 
   async startTracking() {

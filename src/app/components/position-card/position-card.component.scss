@@ -54,6 +54,36 @@ ion-label {
   display: block;
 }
 
+// clickable coords — Google Maps-style hyperlink: no Latitude/Longitude labels
+.pc-coords--link {
+  display: inline-block;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  color: var(--ion-color-blue, #00b14f);
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px; // expand tap hitbox without shifting layout
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
 .pc-address {
   display: block;
   margin-top: 8px;
@@ -178,6 +208,7 @@ ion-label {
     box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset;
   }
   .pc-eyebrow { color: #94a3b8; }
+  .pc-coords--link { color: #34d399; } // lighter Grab emerald for AA contrast on charcoal
   .pc-address { color: #cbd5e1; }
   .tracking-row { color: #f1f5f9; }
   .tracking-item::before { color: #94a3b8; }

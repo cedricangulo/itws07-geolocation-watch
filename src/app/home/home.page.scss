@@ -52,10 +52,10 @@
   left: 16px;
   z-index: 11;
   font-size: 22px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1;
-  color: #ffffff;
+  color: #00b14f;
   text-shadow: 0 2px 12px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.6);
   pointer-events: none;
   user-select: none;
@@ -328,6 +328,31 @@
     color: #cbd5e1 !important;
     a { color: #94a3b8 !important; }
   }
+}
+
+// D — Grab-style paired tooltips: A·Start (green) + B·Now (blue) + distance
+:host ::ng-deep .start-tooltip {
+  background: rgba(0,177,79,0.96) !important; // Grab green
+  color: #fff !important;
+  border: none !important;
+  border-radius: var(--radius-pill) !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.22) !important;
+}
+
+:host ::ng-deep .moving-tooltip {
+  background: rgba(37,99,235,0.96) !important; // blue for B
+  color: #fff !important;
+  border: none !important;
+  border-radius: var(--radius-pill) !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.22) !important;
 }
 
 :host ::ng-deep .distance-tooltip {

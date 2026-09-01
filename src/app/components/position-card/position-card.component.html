@@ -20,9 +20,16 @@
       </div>
     </div>
   } @else {
-    <!-- Finished state: eyebrow + formatted lat/lng -->
+    <!-- Finished state: eyebrow + clickable coords (Google Maps style) -->
     <ion-label class="pc-eyebrow">Current position</ion-label>
-    <ion-label color="orange" class="pc-coords">{{ formatted() }}</ion-label>
+    <a
+      class="pc-coords pc-coords--link"
+      [attr.href]="mapsUrl() || null"
+      target="_blank"
+      rel="noopener"
+      [attr.aria-label]="'Open ' + formatted() + ' in Maps'"
+      >{{ formatted() }}</a
+    >
     <!-- Reverse-geocoded address — clamped to 2 lines to keep card compact -->
     @if (displayName()) {
       <ion-label class="pc-address">{{ displayName() }}</ion-label>
