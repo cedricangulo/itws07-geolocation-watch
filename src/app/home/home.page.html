@@ -33,6 +33,8 @@
       <app-position-card
         [position]="latlng"
         [displayName]="display_name()"
+        [currentPosition]="movingPosition()"
+        [currentDisplayName]="currentDisplayName()"
         [status]="trackingIndicator"
         [distance]="distanceFromStart()"
       ></app-position-card>

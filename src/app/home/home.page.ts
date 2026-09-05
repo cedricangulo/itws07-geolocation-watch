@@ -32,9 +32,17 @@ export class HomePage implements OnDestroy, AfterViewInit {
   alertButtons = ['Refresh'];
   trackingIndicator = 'Not tracking';
 
-  // signals
+  // signals — exposed for template (avoid calling service directly per CD)
   display_name = signal('');
+  currentDisplayName = signal('');
   distanceFromStart = signal(0);
+  movingPosition = this.GeolocationService.movingPosition;
+  private lastReverseAt = 0;
+  private lastReversePos: { lat: number; lng: number } | null = null;
+  private pendingLivePos: { lat: number; lng: number } | null = null;
+  private startReverseId = 0;
+  private liveReverseId = 0;
+  private liveAbort?: AbortController;
 
   // loader handle
   loader?: HTMLIonLoadingElement;
@@ -61,6 +69,25 @@ export class HomePage implements OnDestroy, AfterViewInit {
     }
   }
 
+  private fetchStartAddress(lat: number, lng: number) {
+    const id = ++this.startReverseId;
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
+      headers: { 'Accept-Language': 'en' },
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error(`reverse ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        if (id !== this.startReverseId) return; // stale
+        this.display_name.set(d.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      })
+      .catch(() => {
+        if (id !== this.startReverseId) return;
+        this.display_name.set(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      });
+  }
+
   // preview map shown immediately before Start — no geolocation needed
   private initPreviewMap() {
     if (this.map) return;
@@ -76,6 +103,12 @@ export class HomePage implements OnDestroy, AfterViewInit {
     // ensure Leaflet measures the 100dvh container after Ionic finishes layout
     requestAnimationFrame(() => this.map.invalidateSize());
     setTimeout(() => this.map.invalidateSize(), 200);
+    // flush pending live fix that arrived before map was ready
+    if (this.pendingLivePos) {
+      const p = this.pendingLivePos;
+      this.pendingLivePos = null;
+      queueMicrotask(() => this.GeolocationService.movingPosition.set(p));
+    }
   }
 
   ngAfterViewInit() {
@@ -115,16 +148,13 @@ export class HomePage implements OnDestroy, AfterViewInit {
         this.map.invalidateSize();
       }, 200);
 
-      fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${this.latlng.lat}&lon=${this.latlng.lng}&format=json`
-      )
-        .then((res) => res.json())
-        .then((data) => {
-          this.display_name.set(data.display_name);
-        })
-        .catch(() => {
-          this.display_name.set(`${this.latlng.lat.toFixed(6)}, ${this.latlng.lng.toFixed(6)}`);
-        });
+      this.fetchStartAddress(this.latlng.lat, this.latlng.lng);
+      // flush pending live fix if any
+      if (this.pendingLivePos) {
+        const p = this.pendingLivePos;
+        this.pendingLivePos = null;
+        queueMicrotask(() => this.GeolocationService.movingPosition.set(p));
+      }
       return;
     }
 
@@ -156,62 +186,91 @@ export class HomePage implements OnDestroy, AfterViewInit {
       this.map.invalidateSize();
     }, 200);
 
-    fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${this.latlng.lat}&lon=${this.latlng.lng}&format=json`
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        this.display_name.set(data.display_name);
-      })
-      .catch(() => {
-        this.display_name.set(`${this.latlng.lat.toFixed(6)}, ${this.latlng.lng.toFixed(6)}`);
-      });
+    this.fetchStartAddress(this.latlng.lat, this.latlng.lng);
+    if (this.pendingLivePos) {
+      const p = this.pendingLivePos;
+      this.pendingLivePos = null;
+      queueMicrotask(() => this.GeolocationService.movingPosition.set(p));
+    }
   }
 
-  // watchPosition effect — creates branded tooltips A/B + green polyline + distance
+  // watchPosition effect — creates branded tooltips A/B + green polyline + distance + live reverse
   constructor() {
     effect(() => {
       const pos = this.GeolocationService.movingPosition();
-      if (pos && this.map) {
-        const startLatLng = L.latLng(this.latlng.lat, this.latlng.lng);
-        const movingLatLng = L.latLng(pos.lat, pos.lng);
-        if (!this.lastMarker) {
-          this.lastMarker = L.circleMarker([pos.lat, pos.lng], {
-            radius: 5,
-            color: 'blue',
+      if (!pos) return;
+      if (!this.map) {
+        this.pendingLivePos = pos;
+        return;
+      }
+      const startLatLng = L.latLng(this.latlng.lat, this.latlng.lng);
+      const movingLatLng = L.latLng(pos.lat, pos.lng);
+      if (!this.lastMarker) {
+        this.lastMarker = L.circleMarker([pos.lat, pos.lng], {
+          radius: 5,
+          color: 'blue',
+        })
+          .addTo(this.map)
+          .bindTooltip('B · Now', {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -10],
+            className: 'moving-tooltip',
           })
-            .addTo(this.map)
-            .bindTooltip('B · Now', {
-              permanent: true,
-              direction: 'top',
-              offset: [0, -10],
-              className: 'moving-tooltip',
-            })
-            .openTooltip();
-        } else {
-          this.lastMarker.setLatLng([pos.lat, pos.lng]);
+          .openTooltip();
+      } else {
+        this.lastMarker.setLatLng([pos.lat, pos.lng]);
+      }
+      const distance = startLatLng.distanceTo(movingLatLng);
+      this.distanceFromStart.set(distance);
+      if (!this.distanceLine) {
+        this.distanceLine = L.polyline([startLatLng, movingLatLng], {
+          color: 'green',
+        }).addTo(this.map);
+        this.distanceLine
+          .bindTooltip(`${distance.toFixed(2)} m`, {
+            permanent: true,
+            direction: 'center',
+            className: 'distance-tooltip',
+          })
+          .openTooltip();
+      } else {
+        this.distanceLine.setLatLngs([startLatLng, movingLatLng]);
+        const tooltip = this.distanceLine.getTooltip();
+        if (tooltip) {
+          tooltip.setContent(`${distance.toFixed(2)} m`);
         }
-        const distance = startLatLng.distanceTo(movingLatLng);
-        this.distanceFromStart.set(distance);
-        if (!this.distanceLine) {
-          this.distanceLine = L.polyline([startLatLng, movingLatLng], {
-            color: 'green',
-          }).addTo(this.map);
-          this.distanceLine
-            .bindTooltip(`${distance.toFixed(2)} m`, {
-              permanent: true,
-              direction: 'center',
-              className: 'distance-tooltip',
-            })
-            .openTooltip();
-        } else {
-          this.distanceLine.setLatLngs([startLatLng, movingLatLng]);
-          const tooltip = this.distanceLine.getTooltip();
-          if (tooltip) {
-            tooltip.setContent(`${distance.toFixed(2)} m`);
-          }
-        }
-        this.map.panTo([pos.lat, pos.lng]);
+      }
+      this.map.panTo([pos.lat, pos.lng]);
+
+      // live reverse for B — throttled (Nominatim 1 req/s policy) + 10m gate, with abort + stale guard
+      const now = Date.now();
+      const moved = this.lastReversePos
+        ? L.latLng(this.lastReversePos.lat, this.lastReversePos.lng).distanceTo(movingLatLng)
+        : Infinity;
+      if (now - this.lastReverseAt > 5000 && moved > 10) {
+        this.lastReverseAt = now;
+        this.lastReversePos = { lat: pos.lat, lng: pos.lng };
+        const id = ++this.liveReverseId;
+        this.liveAbort?.abort();
+        this.liveAbort = new AbortController();
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.lat}&lon=${pos.lng}&format=json`, {
+          headers: { 'Accept-Language': 'en' },
+          signal: this.liveAbort.signal,
+        })
+          .then((r) => {
+            if (!r.ok) throw new Error(`reverse ${r.status}`);
+            return r.json();
+          })
+          .then((d) => {
+            if (id !== this.liveReverseId) return;
+            this.currentDisplayName.set(d.display_name || '');
+          })
+          .catch((e) => {
+            if ((e as Error).name === 'AbortError') return;
+            if (id !== this.liveReverseId) return;
+            this.currentDisplayName.set('');
+          });
       }
     });
   }
@@ -258,5 +317,6 @@ export class HomePage implements OnDestroy, AfterViewInit {
       await this.GeolocationService.clearWatch(this.watcherId);
       this.watcherId = null;
     }
+    this.liveAbort?.abort();
   }
 }

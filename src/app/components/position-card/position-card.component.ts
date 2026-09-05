@@ -9,22 +9,37 @@ import { IonCard, IonLabel } from '@ionic/angular';
   imports: [IonCard, IonLabel],
 })
 export class PositionCardComponent {
+  // start (green A) — required, 0,0 = not ready
   position = input.required<{ lat: number; lng: number } | null>();
   displayName = input<string>('');
+  // live (blue B) — null until Track emits
+  currentPosition = input<{ lat: number; lng: number } | null>(null);
+  currentDisplayName = input<string>('');
   status = input<string>('');
   distance = input<number | null>(null);
 
-  // Google Maps-style coords: "14.924927, 120.205933" — labels removed per spec
+  // start coords
   formatted = computed(() => {
     const p = this.position();
     if (!p || (p.lat === 0 && p.lng === 0)) return 'No position yet';
     return `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
   });
 
-  // universal Google Maps link — OS intercepts https → app chooser (no geo: needed)
-  // keeps desktop safe (no about:blank) and avoids popup-blocker on fallback
   mapsUrl = computed(() => {
     const p = this.position();
+    if (!p || (p.lat === 0 && p.lng === 0)) return '';
+    return `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+  });
+
+  // live coords
+  formattedCurrent = computed(() => {
+    const p = this.currentPosition();
+    if (!p || (p.lat === 0 && p.lng === 0)) return '';
+    return `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+  });
+
+  mapsUrlCurrent = computed(() => {
+    const p = this.currentPosition();
     if (!p || (p.lat === 0 && p.lng === 0)) return '';
     return `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
   });

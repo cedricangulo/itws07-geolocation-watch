@@ -20,20 +20,61 @@
       </div>
     </div>
   } @else {
-    <!-- Finished state: eyebrow + clickable coords (Google Maps style) -->
-    <ion-label class="pc-eyebrow">Current position</ion-label>
-    <a
-      class="pc-coords pc-coords--link"
-      [attr.href]="mapsUrl() || null"
-      target="_blank"
-      rel="noopener"
-      [attr.aria-label]="'Open ' + formatted() + ' in Maps'"
-      >{{ formatted() }}</a
-    >
-    <!-- Reverse-geocoded address — clamped to 2 lines to keep card compact -->
-    @if (displayName()) {
-      <ion-label class="pc-address">{{ displayName() }}</ion-label>
+    <!-- State A: single Current Position (before Track) -->
+    @if (!currentPosition() || (currentPosition()!.lat === 0 && currentPosition()!.lng === 0)) {
+      <ion-label class="pc-eyebrow">Current position</ion-label>
+      <a
+        class="pc-coords pc-coords--link"
+        [attr.href]="mapsUrl() || null"
+        target="_blank"
+        rel="noopener"
+        [attr.aria-label]="'Open ' + formatted() + ' in Maps'"
+        >{{ formatted() }}</a
+      >
+      @if (displayName()) {
+        <ion-label class="pc-address">{{ displayName() }}</ion-label>
+      }
+    } @else {
+      <!-- State B: two locations — A Start (green) + B Current (blue) -->
+      <div class="pc-block pc-block--start">
+        <div class="pc-block-head">
+          <span class="pc-dot pc-dot--start" aria-hidden="true"></span>
+          <ion-label class="pc-eyebrow pc-eyebrow--inline">A · Start Position</ion-label>
+        </div>
+        <a
+          class="pc-coords pc-coords--link"
+          [attr.href]="mapsUrl() || null"
+          target="_blank"
+          rel="noopener"
+          [attr.aria-label]="'Open start ' + formatted() + ' in Maps'"
+          >{{ formatted() }}</a
+        >
+        @if (displayName()) {
+          <ion-label class="pc-address">{{ displayName() }}</ion-label>
+        }
+      </div>
+
+      <div class="pc-divider"></div>
+
+      <div class="pc-block pc-block--current">
+        <div class="pc-block-head">
+          <span class="pc-dot pc-dot--current" aria-hidden="true"></span>
+          <ion-label class="pc-eyebrow pc-eyebrow--inline">B · Current Position</ion-label>
+        </div>
+        <a
+          class="pc-coords pc-coords--link"
+          [attr.href]="mapsUrlCurrent() || null"
+          target="_blank"
+          rel="noopener"
+          [attr.aria-label]="'Open current ' + formattedCurrent() + ' in Maps'"
+          >{{ formattedCurrent() }}</a
+        >
+        @if (currentDisplayName()) {
+          <ion-label class="pc-address">{{ currentDisplayName() }}</ion-label>
+        }
+      </div>
     }
+
     <!-- Merged tracking metrics: rendered inside same card, not a separate banner -->
     @if (status() !== '' || distance() !== null) {
       <div class="tracking-divider"></div>

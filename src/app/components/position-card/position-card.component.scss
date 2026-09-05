@@ -37,6 +37,37 @@ ion-label {
   text-wrap: pretty;
 }
 
+// two-location blocks: A Start (green) + B Current (blue)
+.pc-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pc-block-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.pc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: 0 0 8px;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+}
+
+.pc-dot--start { background: #00b14f; box-shadow: 0 0 0 4px rgba(0,177,79,0.14); }
+.pc-dot--current { background: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,0.14); }
+
+.pc-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(15,36,48,0.08), transparent);
+  margin: 12px -16px;
+}
+
 // semantic classes replace inline colors so theme can flip
 .pc-eyebrow {
   display: block;
@@ -46,6 +77,11 @@ ion-label {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #6b7a8a;
+}
+
+.pc-eyebrow--inline {
+  display: inline;
+  margin-bottom: 0;
 }
 
 .pc-coords {
@@ -210,6 +246,9 @@ ion-label {
   .pc-eyebrow { color: #94a3b8; }
   .pc-coords--link { color: #34d399; } // lighter Grab emerald for AA contrast on charcoal
   .pc-address { color: #cbd5e1; }
+  .pc-dot--start { box-shadow: 0 0 0 4px rgba(0,177,79,0.22); }
+  .pc-dot--current { box-shadow: 0 0 0 4px rgba(37,99,235,0.28); }
+  .pc-divider { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent); }
   .tracking-row { color: #f1f5f9; }
   .tracking-item::before { color: #94a3b8; }
   :host ::ng-deep ion-label[color="orange"] { color: #f8fafc !important; }
