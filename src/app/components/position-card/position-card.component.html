@@ -1,18 +1,14 @@
-<!--
-  Glass info card — single surface for position + address + tracking metrics.
-  - Uses Ionic's IonCard for consistent theming, overridden to glass in SCSS.
-  - aria-busy signals assistive tech that the card is in loading/skeleton state.
--->
+<!-- glass card -->
 <ion-card class="ion-padding" style="margin: 0" [attr.aria-busy]="(!position() || (position()!.lat === 0 && position()!.lng === 0)) ? 'true' : null">
-  <!-- Loading skeleton: same height/layout as finished card to prevent CLS jump -->
+  <!-- skeleton -->
   @if (!position() || (position()!.lat === 0 && position()!.lng === 0)) {
-    <!-- aria-live polite announces the locating state without interrupting -->
+    <!-- locating -->
     <div class="skeleton-wrap" aria-live="polite" aria-label="Locating position">
-      <!-- Eyebrow placeholder + two line placeholders mimic the formatted coords -->
+      <!-- skeleton lines -->
       <span class="sk-eyebrow shimmer"></span>
       <span class="sk-line sk-line--lg shimmer"></span>
       <span class="sk-line sk-line--md shimmer"></span>
-      <!-- Divider + metric pills mirror the finished tracking row -->
+      <!-- status skeleton -->
       <div class="tracking-divider skeleton-divider"></div>
       <div class="tracking-row">
         <span class="tracking-item" data-label="Status"><span class="sk-pill shimmer"></span></span>
@@ -20,7 +16,7 @@
       </div>
     </div>
   } @else {
-    <!-- State A: single Current Position (before Track) -->
+    <!-- state A: start only -->
     @if (!currentPosition() || (currentPosition()!.lat === 0 && currentPosition()!.lng === 0)) {
       <ion-label class="pc-eyebrow">Current position</ion-label>
       <a
@@ -35,7 +31,7 @@
         <ion-label class="pc-address">{{ displayName() }}</ion-label>
       }
     } @else {
-      <!-- State B: two locations — A Start (green) + B Current (blue) -->
+      <!-- state B: start + current -->
       <div class="pc-block pc-block--start">
         <div class="pc-block-head">
           <span class="pc-dot pc-dot--start" aria-hidden="true"></span>
@@ -75,7 +71,7 @@
       </div>
     }
 
-    <!-- Merged tracking metrics: rendered inside same card, not a separate banner -->
+    <!-- tracking metrics -->
     @if (status() !== '' || distance() !== null) {
       <div class="tracking-divider"></div>
       <div class="tracking-row">

@@ -1,35 +1,15 @@
-<!--
-  Ionic content is the scroll container. We override it to be a fixed viewport
-  for the full-bleed map:
-  - [fullscreen]="true" lets content extend under status bar / notch.
-  - [scrollY]="false" disables Ionic scroll — map panning must not trigger page scroll.
-  - class="map-content" applies 100dvh sizing and removes default padding (see SCSS).
--->
+<!-- fixed map viewport -->
 <ion-content [fullscreen]="true" [scrollY]="false" class="map-content">
-  <!--
-    Full-bleed map — ALWAYS in DOM (not inside @if). Leaflet's L.map('map')
-    queries by ID at init; if the div is conditionally removed, mapInit() fails
-    or invalidateSize() gets 0x0. We toggle visibility via .map-hidden (opacity 0)
-    so the element retains size for Leaflet to measure.
-  -->
+  <!-- map (always in DOM for Leaflet) -->
   <div id="map"></div>
 
-  <!-- Floating brand — BARG (reverse of GRAB), top-left, bold -->
+  <!-- brand -->
   <div class="floating-brand" aria-label="BARG">BARG</div>
 
-  <!-- Floating bottom sheet — one column anchored to safe-area bottom.
-    Stack order matters: info card (when visible) FIRST, controls LAST.
-    This satisfies "move top card to bottom, buttons as most bottom element"
-    while keeping controls always visible (even before Start).
-    pointer-events:none on container + auto on children lets map pan through gaps.
-  -->
+  <!-- bottom sheet -->
   <div class="floating-bottom">
-    <!-- Info card: position + reverse-geocoded address + merged tracking metrics -->
+    <!-- position card -->
     @if (isMapVisible) {
-      <!--
-        PositionCard is the unified sheet — it receives position + displayName +
-        status/distance so the bottom sheet is one glass surface, not two.
-      -->
       <app-position-card
         [position]="latlng"
         [displayName]="display_name()"
@@ -40,12 +20,7 @@
       ></app-position-card>
     }
 
-    <!--
-      Controls pill — ALWAYS the most bottom element (last child).
-      - role="group" + aria-label groups the three buttons for screen readers.
-      - Each button has an explicit aria-label beyond visible text.
-      - Glass class reuses the shared blur token for visual consistency.
-    -->
+    <!-- controls (always bottom) -->
     <div class="controls-pill glass" role="group" aria-label="Tracking controls">
       <ion-button fill="solid" color="blue" (click)="showMap()" aria-label="Start locating">Start</ion-button>
       <ion-button
@@ -67,11 +42,7 @@
     </div>
   </div>
 
-  <!--
-    Error alert — Ionic's IonAlert rendered at body level via overlay.
-    - isOpen bound to isAlertOpen; didDismiss resets and reloads (see TS).
-    - Keeps error near the action that triggered it (Start) while being globally visible.
-  -->
+  <!-- error alert -->
   <ion-alert
     header="Geolocation API Error"
     message="Unable to fetch current location"
